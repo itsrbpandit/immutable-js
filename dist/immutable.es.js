@@ -1,4 +1,5 @@
 /**
+ * @license
  * MIT License
  * 
  * Copyright (c) 2014-present, Lee Byron and other contributors.
@@ -21,6 +22,7 @@
  * OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
  * SOFTWARE.
  */
+// Used for setting prototype methods that IE8 chokes on.
 var DELETE = 'delete';
 
 // Constants describing the size of trie nodes.
@@ -112,6 +114,7 @@ function isNeg(value) {
   return value < 0 || (value === 0 && 1 / value === -Infinity);
 }
 
+// Note: value is unchanged to not break immutable-devtools.
 var IS_COLLECTION_SYMBOL = '@@__IMMUTABLE_ITERABLE__@@';
 
 function isCollection(maybeCollection) {
@@ -135,11 +138,13 @@ function isAssociative(maybeAssociative) {
 }
 
 var Collection = function Collection(value) {
+  // eslint-disable-next-line no-constructor-return
   return isCollection(value) ? value : Seq(value);
 };
 
 var KeyedCollection = /*@__PURE__*/(function (Collection) {
   function KeyedCollection(value) {
+    // eslint-disable-next-line no-constructor-return
     return isKeyed(value) ? value : KeyedSeq(value);
   }
 
@@ -152,6 +157,7 @@ var KeyedCollection = /*@__PURE__*/(function (Collection) {
 
 var IndexedCollection = /*@__PURE__*/(function (Collection) {
   function IndexedCollection(value) {
+    // eslint-disable-next-line no-constructor-return
     return isIndexed(value) ? value : IndexedSeq(value);
   }
 
@@ -164,6 +170,7 @@ var IndexedCollection = /*@__PURE__*/(function (Collection) {
 
 var SetCollection = /*@__PURE__*/(function (Collection) {
   function SetCollection(value) {
+    // eslint-disable-next-line no-constructor-return
     return isCollection(value) && !isAssociative(value) ? value : SetSeq(value);
   }
 
@@ -229,7 +236,8 @@ Iterator.prototype[ITERATOR_SYMBOL] = function () {
 };
 
 function iteratorValue(type, k, v, iteratorResult) {
-  var value = type === 0 ? k : type === 1 ? v : [k, v];
+  var value =
+    type === ITERATE_KEYS ? k : type === ITERATE_VALUES ? v : [k, v];
   iteratorResult
     ? (iteratorResult.value = value)
     : (iteratorResult = {
@@ -304,7 +312,8 @@ function isArrayLike(value) {
 
 var Seq = /*@__PURE__*/(function (Collection) {
   function Seq(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptySequence()
       : isImmutable(value)
       ? value.toSeq()
@@ -372,7 +381,8 @@ var Seq = /*@__PURE__*/(function (Collection) {
 
 var KeyedSeq = /*@__PURE__*/(function (Seq) {
   function KeyedSeq(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptySequence().toKeyedSeq()
       : isCollection(value)
       ? isKeyed(value)
@@ -396,7 +406,8 @@ var KeyedSeq = /*@__PURE__*/(function (Seq) {
 
 var IndexedSeq = /*@__PURE__*/(function (Seq) {
   function IndexedSeq(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptySequence()
       : isCollection(value)
       ? isKeyed(value)
@@ -428,6 +439,7 @@ var IndexedSeq = /*@__PURE__*/(function (Seq) {
 
 var SetSeq = /*@__PURE__*/(function (Seq) {
   function SetSeq(value) {
+    // eslint-disable-next-line no-constructor-return
     return (
       isCollection(value) && !isAssociative(value) ? value : IndexedSeq(value)
     ).toSetSeq();
@@ -502,7 +514,9 @@ var ArraySeq = /*@__PURE__*/(function (IndexedSeq) {
 
 var ObjectSeq = /*@__PURE__*/(function (KeyedSeq) {
   function ObjectSeq(object) {
-    var keys = Object.keys(object);
+    var keys = Object.keys(object).concat(
+      Object.getOwnPropertySymbols ? Object.getOwnPropertySymbols(object) : []
+    );
     this._object = object;
     this._keys = keys;
     this.size = keys.length;
@@ -1408,6 +1422,18 @@ function groupByFactory(collection, grouper, context) {
   return groups.map(function (arr) { return reify(collection, coerce(arr)); }).asImmutable();
 }
 
+function partitionFactory(collection, predicate, context) {
+  var isKeyedIter = isKeyed(collection);
+  var groups = [[], []];
+  collection.__iterate(function (v, k) {
+    groups[predicate.call(context, v, k, collection) ? 1 : 0].push(
+      isKeyedIter ? [k, v] : v
+    );
+  });
+  var coerce = collectionClass(collection);
+  return groups.map(function (arr) { return reify(collection, coerce(arr)); });
+}
+
 function sliceFactory(collection, begin, end, useKeys) {
   var originalSize = collection.size;
 
@@ -1415,15 +1441,15 @@ function sliceFactory(collection, begin, end, useKeys) {
     return collection;
   }
 
-  var resolvedBegin = resolveBegin(begin, originalSize);
-  var resolvedEnd = resolveEnd(end, originalSize);
-
-  // begin or end will be NaN if they were provided as negative numbers and
+  // begin or end can not be resolved if they were provided as negative numbers and
   // this collection's size is unknown. In that case, cache first so there is
   // a known size and these do not resolve to NaN.
-  if (resolvedBegin !== resolvedBegin || resolvedEnd !== resolvedEnd) {
+  if (typeof originalSize === 'undefined' && (begin < 0 || end < 0)) {
     return sliceFactory(collection.toSeq().cacheResult(), begin, end, useKeys);
   }
+
+  var resolvedBegin = resolveBegin(begin, originalSize);
+  var resolvedEnd = resolveEnd(end, originalSize);
 
   // Note: resolvedEnd is undefined when the original sequence's length is
   // unknown and this slice did not supply an end and should contain all
@@ -1603,6 +1629,108 @@ function skipWhileFactory(collection, predicate, context, useKeys) {
   return skipSequence;
 }
 
+var ConcatSeq = /*@__PURE__*/(function (Seq) {
+  function ConcatSeq(iterables) {
+    this._wrappedIterables = iterables.flatMap(function (iterable) {
+      if (iterable._wrappedIterables) {
+        return iterable._wrappedIterables;
+      }
+      return [iterable];
+    });
+    this.size = this._wrappedIterables.reduce(function (sum, iterable) {
+      if (sum !== undefined) {
+        var size = iterable.size;
+        if (size !== undefined) {
+          return sum + size;
+        }
+      }
+    }, 0);
+    this[IS_KEYED_SYMBOL] = this._wrappedIterables[0][IS_KEYED_SYMBOL];
+    this[IS_INDEXED_SYMBOL] = this._wrappedIterables[0][IS_INDEXED_SYMBOL];
+    this[IS_ORDERED_SYMBOL] = this._wrappedIterables[0][IS_ORDERED_SYMBOL];
+  }
+
+  if ( Seq ) ConcatSeq.__proto__ = Seq;
+  ConcatSeq.prototype = Object.create( Seq && Seq.prototype );
+  ConcatSeq.prototype.constructor = ConcatSeq;
+
+  ConcatSeq.prototype.__iterateUncached = function __iterateUncached (fn, reverse) {
+    if (this._wrappedIterables.length === 0) {
+      return;
+    }
+
+    if (reverse) {
+      return this.cacheResult().__iterate(fn, reverse);
+    }
+
+    var iterableIndex = 0;
+    var useKeys = isKeyed(this);
+    var iteratorType = useKeys ? ITERATE_ENTRIES : ITERATE_VALUES;
+    var currentIterator = this._wrappedIterables[iterableIndex].__iterator(
+      iteratorType,
+      reverse
+    );
+
+    var keepGoing = true;
+    var index = 0;
+    while (keepGoing) {
+      var next = currentIterator.next();
+      while (next.done) {
+        iterableIndex++;
+        if (iterableIndex === this._wrappedIterables.length) {
+          return index;
+        }
+        currentIterator = this._wrappedIterables[iterableIndex].__iterator(
+          iteratorType,
+          reverse
+        );
+        next = currentIterator.next();
+      }
+      var fnResult = useKeys
+        ? fn(next.value[1], next.value[0], this)
+        : fn(next.value, index, this);
+      keepGoing = fnResult !== false;
+      index++;
+    }
+    return index;
+  };
+
+  ConcatSeq.prototype.__iteratorUncached = function __iteratorUncached (type, reverse) {
+    var this$1$1 = this;
+
+    if (this._wrappedIterables.length === 0) {
+      return new Iterator(iteratorDone);
+    }
+
+    if (reverse) {
+      return this.cacheResult().__iterator(type, reverse);
+    }
+
+    var iterableIndex = 0;
+    var currentIterator = this._wrappedIterables[iterableIndex].__iterator(
+      type,
+      reverse
+    );
+    return new Iterator(function () {
+      var next = currentIterator.next();
+      while (next.done) {
+        iterableIndex++;
+        if (iterableIndex === this$1$1._wrappedIterables.length) {
+          return next;
+        }
+        currentIterator = this$1$1._wrappedIterables[iterableIndex].__iterator(
+          type,
+          reverse
+        );
+        next = currentIterator.next();
+      }
+      return next;
+    });
+  };
+
+  return ConcatSeq;
+}(Seq));
+
 function concatFactory(collection, values) {
   var isKeyedCollection = isKeyed(collection);
   var iters = [collection]
@@ -1634,22 +1762,7 @@ function concatFactory(collection, values) {
     }
   }
 
-  var concatSeq = new ArraySeq(iters);
-  if (isKeyedCollection) {
-    concatSeq = concatSeq.toKeyedSeq();
-  } else if (!isIndexed(collection)) {
-    concatSeq = concatSeq.toSetSeq();
-  }
-  concatSeq = concatSeq.flatten(true);
-  concatSeq.size = iters.reduce(function (sum, seq) {
-    if (sum !== undefined) {
-      var size = seq.size;
-      if (size !== undefined) {
-        return sum + size;
-      }
-    }
-  }, 0);
-  return concatSeq;
+  return new ConcatSeq(iters);
 }
 
 function flattenFactory(collection, depth, useKeys) {
@@ -1915,6 +2028,7 @@ function defaultComparator(a, b) {
   return a > b ? 1 : a < b ? -1 : 0;
 }
 
+// http://jsperf.com/copy-array-inline
 function arrCopy(arr, offset) {
   offset = offset || 0;
   var len = Math.max(0, arr.length - offset);
@@ -1986,6 +2100,9 @@ function isDataStructure(value) {
   );
 }
 
+/**
+ * Converts a value to a string, adding quotes if a string was provided.
+ */
 function quoteString(value) {
   try {
     return typeof value === 'string' ? JSON.stringify(value) : String(value);
@@ -2362,7 +2479,8 @@ function wasAltered() {
 
 var Map = /*@__PURE__*/(function (KeyedCollection) {
   function Map(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptyMap()
       : isMap(value) && !isOrdered(value)
       ? value
@@ -2376,20 +2494,6 @@ var Map = /*@__PURE__*/(function (KeyedCollection) {
   if ( KeyedCollection ) Map.__proto__ = KeyedCollection;
   Map.prototype = Object.create( KeyedCollection && KeyedCollection.prototype );
   Map.prototype.constructor = Map;
-
-  Map.of = function of () {
-    var keyValues = [], len = arguments.length;
-    while ( len-- ) keyValues[ len ] = arguments[ len ];
-
-    return emptyMap().withMutations(function (map) {
-      for (var i = 0; i < keyValues.length; i += 2) {
-        if (i + 1 >= keyValues.length) {
-          throw new Error('Missing value for key: ' + keyValues[i]);
-        }
-        map.set(keyValues[i], keyValues[i + 1]);
-      }
-    });
-  };
 
   Map.prototype.toString = function toString () {
     return this.__toString('Map {', '}');
@@ -2880,7 +2984,7 @@ BitmapIndexedNode.prototype.iterate = HashArrayMapNode.prototype.iterate =
     }
   };
 
-// eslint-disable-next-line no-unused-vars
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 ValueNode.prototype.iterate = function (fn, reverse) {
   return fn(this.entry);
 };
@@ -3153,21 +3257,26 @@ function isList(maybeList) {
 var List = /*@__PURE__*/(function (IndexedCollection) {
   function List(value) {
     var empty = emptyList();
-    if (value === null || value === undefined) {
+    if (value === undefined || value === null) {
+      // eslint-disable-next-line no-constructor-return
       return empty;
     }
     if (isList(value)) {
+      // eslint-disable-next-line no-constructor-return
       return value;
     }
     var iter = IndexedCollection(value);
     var size = iter.size;
     if (size === 0) {
+      // eslint-disable-next-line no-constructor-return
       return empty;
     }
     assertNotInfinite(size);
     if (size > 0 && size < SIZE) {
+      // eslint-disable-next-line no-constructor-return
       return makeList(0, size, SHIFT, null, new VNode(iter.toArray()));
     }
+    // eslint-disable-next-line no-constructor-return
     return empty.withMutations(function (list) {
       list.setSize(size);
       iter.forEach(function (v, i) { return list.set(i, v); });
@@ -3397,7 +3506,10 @@ var VNode = function VNode(array, ownerID) {
 // TODO: seems like these methods are very similar
 
 VNode.prototype.removeBefore = function removeBefore (ownerID, level, index) {
-  if (index === level ? 1 << level : this.array.length === 0) {
+  if (
+    (index & ((1 << (level + SHIFT)) - 1)) === 0 ||
+    this.array.length === 0
+  ) {
     return this;
   }
   var originIndex = (index >>> level) & MASK;
@@ -3430,7 +3542,10 @@ VNode.prototype.removeBefore = function removeBefore (ownerID, level, index) {
 };
 
 VNode.prototype.removeAfter = function removeAfter (ownerID, level, index) {
-  if (index === (level ? 1 << level : 0) || this.array.length === 0) {
+  if (
+    index === (level ? 1 << (level + SHIFT) : SIZE) ||
+    this.array.length === 0
+  ) {
     return this;
   }
   var sizeIndex = ((index - 1) >>> level) & MASK;
@@ -3533,9 +3648,8 @@ function makeList(origin, capacity, level, root, tail, ownerID, hash) {
   return list;
 }
 
-var EMPTY_LIST;
 function emptyList() {
-  return EMPTY_LIST || (EMPTY_LIST = makeList(0, 0, SHIFT));
+  return makeList(0, 0, SHIFT);
 }
 
 function updateList(list, index, value) {
@@ -3803,7 +3917,8 @@ function getTailOffset(size) {
 
 var OrderedMap = /*@__PURE__*/(function (Map) {
   function OrderedMap(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptyOrderedMap()
       : isOrderedMap(value)
       ? value
@@ -3971,7 +4086,8 @@ function isStack(maybeStack) {
 
 var Stack = /*@__PURE__*/(function (IndexedCollection) {
   function Stack(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptyStack()
       : isStack(value)
       ? value
@@ -4269,6 +4385,9 @@ function deepEqual(a, b) {
   return allEqual && a.size === bSize;
 }
 
+/**
+ * Contributes additional methods to a constructor
+ */
 function mixin(ctor, methods) {
   var keyCopier = function (key) {
     ctor.prototype[key] = methods[key];
@@ -4305,7 +4424,8 @@ function toJS(value) {
 
 var Set = /*@__PURE__*/(function (SetCollection) {
   function Set(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptySet()
       : isSet(value) && !isOrdered(value)
       ? value
@@ -4405,7 +4525,11 @@ var Set = /*@__PURE__*/(function (SetCollection) {
     }
     return this.withMutations(function (set) {
       for (var ii = 0; ii < iters.length; ii++) {
-        SetCollection(iters[ii]).forEach(function (value) { return set.add(value); });
+        if (typeof iters[ii] === 'string') {
+          set.add(iters[ii]);
+        } else {
+          SetCollection(iters[ii]).forEach(function (value) { return set.add(value); });
+        }
       }
     });
   };
@@ -4547,15 +4671,23 @@ function emptySet() {
  */
 var Range = /*@__PURE__*/(function (IndexedSeq) {
   function Range(start, end, step) {
+    if ( step === void 0 ) step = 1;
+
     if (!(this instanceof Range)) {
+      // eslint-disable-next-line no-constructor-return
       return new Range(start, end, step);
     }
     invariant(step !== 0, 'Cannot step a Range by 0');
-    start = start || 0;
-    if (end === undefined) {
-      end = Infinity;
-    }
-    step = step === undefined ? 1 : Math.abs(step);
+    invariant(
+      start !== undefined,
+      'You must define a start value when using Range'
+    );
+    invariant(
+      end !== undefined,
+      'You must define an end value when using Range'
+    );
+
+    step = Math.abs(step);
     if (end < start) {
       step = -step;
     }
@@ -4565,8 +4697,10 @@ var Range = /*@__PURE__*/(function (IndexedSeq) {
     this.size = Math.max(0, Math.ceil((end - start) / step - 1) + 1);
     if (this.size === 0) {
       if (EMPTY_RANGE) {
+        // eslint-disable-next-line no-constructor-return
         return EMPTY_RANGE;
       }
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       EMPTY_RANGE = this;
     }
   }
@@ -4710,13 +4844,6 @@ function toObject() {
   return object;
 }
 
-// Note: all of these methods are deprecated.
-Collection.isIterable = isCollection;
-Collection.isKeyed = isKeyed;
-Collection.isIndexed = isIndexed;
-Collection.isAssociative = isAssociative;
-Collection.isOrdered = isOrdered;
-
 Collection.Iterator = Iterator;
 
 mixin(Collection, {
@@ -4842,6 +4969,10 @@ mixin(Collection, {
     return reify(this, filterFactory(this, predicate, context, true));
   },
 
+  partition: function partition(predicate, context) {
+    return partitionFactory(this, predicate, context);
+  },
+
   find: function find(predicate, context, notSetValue) {
     var entry = this.findEntry(predicate, context);
     return entry ? entry[1] : notSetValue;
@@ -4903,7 +5034,15 @@ mixin(Collection, {
   },
 
   some: function some(predicate, context) {
-    return !this.every(not(predicate), context);
+    assertNotInfinite(this.size);
+    var returnValue = false;
+    this.__iterate(function (v, k, c) {
+      if (predicate.call(context, v, k, c)) {
+        returnValue = true;
+        return false;
+      }
+    });
+    return returnValue;
   },
 
   sort: function sort(comparator) {
@@ -4939,6 +5078,7 @@ mixin(Collection, {
   },
 
   entrySeq: function entrySeq() {
+    // eslint-disable-next-line @typescript-eslint/no-this-alias
     var collection = this;
     if (collection._cache) {
       // We cache as an entries array, so we can just return the cache!
@@ -5389,7 +5529,8 @@ function hashCollection(collection) {
   var ordered = isOrdered(collection);
   var keyed = isKeyed(collection);
   var h = ordered ? 1 : 0;
-  var size = collection.__iterate(
+
+  collection.__iterate(
     keyed
       ? ordered
         ? function (v, k) {
@@ -5406,7 +5547,8 @@ function hashCollection(collection) {
           h = (h + hash(v)) | 0;
         }
   );
-  return murmurHashOfSize(size, h);
+
+  return murmurHashOfSize(collection.size, h);
 }
 
 function murmurHashOfSize(size, h) {
@@ -5426,7 +5568,8 @@ function hashMerge(a, b) {
 
 var OrderedSet = /*@__PURE__*/(function (Set) {
   function OrderedSet(value) {
-    return value === null || value === undefined
+    // eslint-disable-next-line no-constructor-return
+    return value === undefined || value === null
       ? emptyOrderedSet()
       : isOrderedSet(value)
       ? value
@@ -5481,6 +5624,11 @@ function emptyOrderedSet() {
     EMPTY_ORDERED_SET || (EMPTY_ORDERED_SET = makeOrderedSet(emptyOrderedMap()))
   );
 }
+
+var PairSorting = {
+  LeftThenRight: -1,
+  RightThenLeft: +1,
+};
 
 function throwOnInvalidDefaultValues(defaultValues) {
   if (isRecord(defaultValues)) {
@@ -5564,6 +5712,7 @@ var Record = function Record(defaultValues, name) {
     RecordType.displayName = name;
   }
 
+  // eslint-disable-next-line no-constructor-return
   return RecordType;
 };
 
@@ -5580,7 +5729,8 @@ Record.prototype.toString = function toString () {
 
 Record.prototype.equals = function equals (other) {
   return (
-    this === other || (other && recordSeq(this).equals(recordSeq(other)))
+    this === other ||
+    (isRecord(other) && recordSeq(this).equals(recordSeq(other)))
   );
 };
 
@@ -5730,14 +5880,17 @@ function setProp(prototype, name) {
 var Repeat = /*@__PURE__*/(function (IndexedSeq) {
   function Repeat(value, times) {
     if (!(this instanceof Repeat)) {
+      // eslint-disable-next-line no-constructor-return
       return new Repeat(value, times);
     }
     this._value = value;
     this.size = times === undefined ? Infinity : Math.max(0, times);
     if (this.size === 0) {
       if (EMPTY_REPEAT) {
+        // eslint-disable-next-line no-constructor-return
         return EMPTY_REPEAT;
       }
+      // eslint-disable-next-line @typescript-eslint/no-this-alias
       EMPTY_REPEAT = this;
     }
   }
@@ -5814,7 +5967,7 @@ var Repeat = /*@__PURE__*/(function (IndexedSeq) {
   Repeat.prototype.equals = function equals (other) {
     return other instanceof Repeat
       ? is(this._value, other._value)
-      : deepEqual(other);
+      : deepEqual(this, other);
   };
 
   return Repeat;
@@ -5863,66 +6016,9 @@ function defaultConverter(k, v) {
   return isIndexed(v) ? v.toList() : isKeyed(v) ? v.toMap() : v.toSet();
 }
 
-var version = "4.0.0-rc.15";
-
-var Immutable = {
-  version: version,
-
-  Collection: Collection,
-  // Note: Iterable is deprecated
-  Iterable: Collection,
-
-  Seq: Seq,
-  Map: Map,
-  OrderedMap: OrderedMap,
-  List: List,
-  Stack: Stack,
-  Set: Set,
-  OrderedSet: OrderedSet,
-
-  Record: Record,
-  Range: Range,
-  Repeat: Repeat,
-
-  is: is,
-  fromJS: fromJS,
-  hash: hash,
-
-  isImmutable: isImmutable,
-  isCollection: isCollection,
-  isKeyed: isKeyed,
-  isIndexed: isIndexed,
-  isAssociative: isAssociative,
-  isOrdered: isOrdered,
-  isValueObject: isValueObject,
-  isPlainObject: isPlainObject,
-  isSeq: isSeq,
-  isList: isList,
-  isMap: isMap,
-  isOrderedMap: isOrderedMap,
-  isStack: isStack,
-  isSet: isSet,
-  isOrderedSet: isOrderedSet,
-  isRecord: isRecord,
-
-  get: get,
-  getIn: getIn$1,
-  has: has,
-  hasIn: hasIn$1,
-  merge: merge,
-  mergeDeep: mergeDeep$1,
-  mergeWith: mergeWith,
-  mergeDeepWith: mergeDeepWith$1,
-  remove: remove,
-  removeIn: removeIn,
-  set: set,
-  setIn: setIn$1,
-  update: update$1,
-  updateIn: updateIn$1,
-};
+var version = "5.0.3";
 
 // Note: Iterable is deprecated
 var Iterable = Collection;
 
-export default Immutable;
-export { Collection, Iterable, List, Map, OrderedMap, OrderedSet, Range, Record, Repeat, Seq, Set, Stack, fromJS, get, getIn$1 as getIn, has, hasIn$1 as hasIn, hash, is, isAssociative, isCollection, isImmutable, isIndexed, isKeyed, isList, isMap, isOrdered, isOrderedMap, isOrderedSet, isPlainObject, isRecord, isSeq, isSet, isStack, isValueObject, merge, mergeDeep$1 as mergeDeep, mergeDeepWith$1 as mergeDeepWith, mergeWith, remove, removeIn, set, setIn$1 as setIn, update$1 as update, updateIn$1 as updateIn, version };
+export { Collection, Iterable, List, Map, OrderedMap, OrderedSet, PairSorting, Range, Record, Repeat, Seq, Set, Stack, fromJS, get, getIn$1 as getIn, has, hasIn$1 as hasIn, hash, is, isAssociative, isCollection, isImmutable, isIndexed, isKeyed, isList, isMap, isOrdered, isOrderedMap, isOrderedSet, isPlainObject, isRecord, isSeq, isSet, isStack, isValueObject, merge, mergeDeep$1 as mergeDeep, mergeDeepWith$1 as mergeDeepWith, mergeWith, remove, removeIn, set, setIn$1 as setIn, update$1 as update, updateIn$1 as updateIn, version };
