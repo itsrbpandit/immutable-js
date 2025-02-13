@@ -28,9 +28,8 @@ describe('hash', () => {
   });
 
   it('generates different hashes for different symbols', () => {
-    // eslint-disable-next-line symbol-description
     const symA = Symbol();
-    // eslint-disable-next-line symbol-description
+
     const symB = Symbol();
     expect(hash(symA)).toBe(hash(symA));
     expect(hash(symA)).not.toBe(hash(symB));
@@ -45,7 +44,7 @@ describe('hash', () => {
 
   const genValue = gen.oneOf([gen.string, gen.int]);
 
-  check.it('generates unsigned 31-bit integers', [genValue], value => {
+  check.it('generates unsigned 31-bit integers', [genValue], (value) => {
     const hashVal = hash(value);
     expect(Number.isInteger(hashVal)).toBe(true);
     expect(hashVal).toBeGreaterThan(-(2 ** 31));

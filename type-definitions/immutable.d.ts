@@ -1,5 +1,4 @@
 /** @ignore we should disable this rules, but let's activate it to enable eslint first */
-/* eslint-disable @typescript-eslint/no-explicit-any, @typescript-eslint/ban-types */
 /**
  * Immutable data encourages pure functions (data-in, data-out) and lends itself
  * to much simpler application development and enabling techniques from
@@ -97,11 +96,12 @@ declare namespace Immutable {
   type OnlyObject<T> = Extract<T, object>;
 
   /** @ignore */
-  type ContainObject<T> = OnlyObject<T> extends object
-    ? OnlyObject<T> extends never
-      ? false
-      : true
-    : false;
+  type ContainObject<T> =
+    OnlyObject<T> extends object
+      ? OnlyObject<T> extends never
+        ? false
+        : true
+      : false;
 
   /**
    * @ignore
@@ -109,39 +109,46 @@ declare namespace Immutable {
    * Used to convert deeply all immutable types to a plain TS type.
    * Using `unknown` on object instead of recursive call as we have a circular reference issue
    */
-  export type DeepCopy<T> = T extends Record<infer R>
-    ? // convert Record to DeepCopy plain JS object
-      {
-        [key in keyof R]: ContainObject<R[key]> extends true ? unknown : R[key];
-      }
-    : T extends MapOf<infer R>
-    ? // convert MapOf to DeepCopy plain JS object
-      {
-        [key in keyof R]: ContainObject<R[key]> extends true ? unknown : R[key];
-      }
-    : T extends Collection.Keyed<infer KeyedKey, infer V>
-    ? // convert KeyedCollection to DeepCopy plain JS object
-      {
-        [key in KeyedKey extends string | number | symbol
-          ? KeyedKey
-          : string]: V extends object ? unknown : V;
-      }
-    : // convert IndexedCollection or Immutable.Set to DeepCopy plain JS array
-    // eslint-disable-next-line @typescript-eslint/no-unused-vars
-    T extends Collection<infer _, infer V>
-    ? Array<DeepCopy<V>>
-    : T extends string | number // Iterable scalar types : should be kept as is
-    ? T
-    : T extends Iterable<infer V> // Iterable are converted to plain JS array
-    ? Array<DeepCopy<V>>
-    : T extends object // plain JS object are converted deeply
-    ? {
-        [ObjectKey in keyof T]: ContainObject<T[ObjectKey]> extends true
-          ? unknown
-          : T[ObjectKey];
-      }
-    : // other case : should be kept as is
-      T;
+  export type DeepCopy<T> =
+    T extends Record<infer R>
+      ? // convert Record to DeepCopy plain JS object
+        {
+          [key in keyof R]: ContainObject<R[key]> extends true
+            ? unknown
+            : R[key];
+        }
+      : T extends MapOf<infer R>
+        ? // convert MapOf to DeepCopy plain JS object
+          {
+            [key in keyof R]: ContainObject<R[key]> extends true
+              ? unknown
+              : R[key];
+          }
+        : T extends Collection.Keyed<infer KeyedKey, infer V>
+          ? // convert KeyedCollection to DeepCopy plain JS object
+            {
+              [key in KeyedKey extends string | number | symbol
+                ? KeyedKey
+                : string]: V extends object ? unknown : V;
+            }
+          : // convert IndexedCollection or Immutable.Set to DeepCopy plain JS array
+            // eslint-disable-next-line @typescript-eslint/no-unused-vars
+            T extends Collection<infer _, infer V>
+            ? Array<DeepCopy<V>>
+            : T extends string | number // Iterable scalar types : should be kept as is
+              ? T
+              : T extends Iterable<infer V> // Iterable are converted to plain JS array
+                ? Array<DeepCopy<V>>
+                : T extends object // plain JS object are converted deeply
+                  ? {
+                      [ObjectKey in keyof T]: ContainObject<
+                        T[ObjectKey]
+                      > extends true
+                        ? unknown
+                        : T[ObjectKey];
+                    }
+                  : // other case : should be kept as is
+                    T;
 
   /**
    * Describes which item in a pair should be placed first when sorting
@@ -853,7 +860,7 @@ declare namespace Immutable {
      * that does not guarantee the key was not found.
      */
     get<K extends keyof R>(key: K, notSetValue?: unknown): R[K];
-    get<NSV>(key: any, notSetValue: NSV): NSV;
+    get<NSV>(key: unknown, notSetValue: NSV): NSV;
 
     // TODO `<const P extends ...>` can be used after dropping support for TypeScript 4.x
     // reference: https://www.typescriptlang.org/docs/handbook/release-notes/typescript-5-0.html#const-type-parameters
@@ -894,15 +901,15 @@ declare namespace Immutable {
   type GetMapType<S> = S extends MapOf<infer T> ? T : S;
 
   /** @ignore */
-  type Head<T extends ReadonlyArray<any>> = T extends [
+  type Head<T extends ReadonlyArray<unknown>> = T extends [
     infer H,
-    ...Array<unknown>
+    ...Array<unknown>,
   ]
     ? H
     : never;
 
   /** @ignore */
-  type Tail<T extends ReadonlyArray<any>> = T extends [unknown, ...infer I]
+  type Tail<T extends ReadonlyArray<unknown>> = T extends [unknown, ...infer I]
     ? I
     : Array<never>;
 
@@ -910,7 +917,7 @@ declare namespace Immutable {
   type RetrievePathReducer<
     T,
     C,
-    L extends ReadonlyArray<any>
+    L extends ReadonlyArray<unknown>,
   > = C extends keyof GetMapType<T>
     ? L extends []
       ? GetMapType<T>[C]
@@ -920,7 +927,7 @@ declare namespace Immutable {
   /** @ignore */
   type RetrievePath<
     R,
-    P extends ReadonlyArray<string | number | symbol>
+    P extends ReadonlyArray<string | number | symbol>,
   > = P extends [] ? P : RetrievePathReducer<R, Head<P>, Tail<P>>;
 
   interface Map<K, V> extends Collection.Keyed<K, V> {
@@ -2765,7 +2772,7 @@ declare namespace Immutable {
     /**
      * True if `maybeRecord` is an instance of a Record.
      */
-    function isRecord(maybeRecord: unknown): maybeRecord is Record<{}>;
+    function isRecord(maybeRecord: unknown): maybeRecord is Record<object>;
 
     /**
      * Records allow passing a second parameter to supply a descriptive name
@@ -2784,7 +2791,9 @@ declare namespace Immutable {
      * Record.getDescriptiveName(me) // "Person"
      * ```
      */
-    function getDescriptiveName(record: Record<any>): string;
+    function getDescriptiveName<TProps extends object>(
+      record: RecordOf<TProps>
+    ): string;
 
     /**
      * A Record.Factory is created by the `Record()` function. Record instances
@@ -2837,11 +2846,12 @@ declare namespace Immutable {
     namespace Factory {}
 
     interface Factory<TProps extends object> {
-      (values?: Partial<TProps> | Iterable<[string, unknown]>): Record<TProps> &
-        Readonly<TProps>;
+      (
+        values?: Partial<TProps> | Iterable<[string, unknown]>
+      ): RecordOf<TProps>;
       new (
         values?: Partial<TProps> | Iterable<[string, unknown]>
-      ): Record<TProps> & Readonly<TProps>;
+      ): RecordOf<TProps>;
 
       /**
        * The name provided to `Record(values, name)` can be accessed with
@@ -2852,7 +2862,7 @@ declare namespace Immutable {
 
     function Factory<TProps extends object>(
       values?: Partial<TProps> | Iterable<[string, unknown]>
-    ): Record<TProps> & Readonly<TProps>;
+    ): RecordOf<TProps>;
   }
 
   /**
@@ -5416,24 +5426,23 @@ declare namespace Immutable {
 
   type FromJS<JSValue> = JSValue extends FromJSNoTransform
     ? JSValue
-    : JSValue extends Array<any>
-    ? FromJSArray<JSValue>
-    : JSValue extends {}
-    ? FromJSObject<JSValue>
-    : any;
+    : JSValue extends Array<unknown>
+      ? FromJSArray<JSValue>
+      : JSValue extends object
+        ? FromJSObject<JSValue>
+        : unknown;
 
   type FromJSNoTransform =
-    | Collection<any, any>
+    | Collection<unknown, unknown>
     | number
     | string
     | null
     | undefined;
 
-  type FromJSArray<JSValue> = JSValue extends Array<infer T>
-    ? List<FromJS<T>>
-    : never;
+  type FromJSArray<JSValue> =
+    JSValue extends Array<infer T> ? List<FromJS<T>> : never;
 
-  type FromJSObject<JSValue> = JSValue extends {}
+  type FromJSObject<JSValue> = JSValue extends object
     ? Map<keyof JSValue, FromJS<JSValue[keyof JSValue]>>
     : never;
 
@@ -5657,7 +5666,7 @@ declare namespace Immutable {
   /**
    * True if `maybeRecord` is a Record.
    */
-  function isRecord(maybeRecord: unknown): maybeRecord is Record<{}>;
+  function isRecord(maybeRecord: unknown): maybeRecord is Record<object>;
 
   /**
    * Returns the value within the provided collection associated with the
@@ -5746,7 +5755,7 @@ declare namespace Immutable {
   function remove<
     TProps extends object,
     C extends Record<TProps>,
-    K extends keyof TProps
+    K extends keyof TProps,
   >(collection: C, key: K): C;
   function remove<C extends Array<unknown>>(collection: C, key: number): C;
   function remove<C, K extends keyof C>(collection: C, key: K): C;
@@ -5782,7 +5791,7 @@ declare namespace Immutable {
   function set<
     TProps extends object,
     C extends Record<TProps>,
-    K extends keyof TProps
+    K extends keyof TProps,
   >(record: C, key: K, value: TProps[K]): C;
   function set<V, C extends Array<V>>(collection: C, key: number, value: V): C;
   function set<C, K extends keyof C>(object: C, key: K, value: C[K]): C;
@@ -5825,13 +5834,13 @@ declare namespace Immutable {
   function update<
     TProps extends object,
     C extends Record<TProps>,
-    K extends keyof TProps
+    K extends keyof TProps,
   >(record: C, key: K, updater: (value: TProps[K]) => TProps[K]): C;
   function update<
     TProps extends object,
     C extends Record<TProps>,
     K extends keyof TProps,
-    NSV
+    NSV,
   >(
     record: C,
     key: K,

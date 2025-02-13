@@ -98,7 +98,7 @@ describe('Set', () => {
 
   it('maps no-ops return the same reference', () => {
     const s = Set([1, 2, 3]);
-    const r = s.map(value => value);
+    const r = s.map((value) => value);
     expect(r).toBe(s);
   });
 
@@ -107,7 +107,7 @@ describe('Set', () => {
     expect(s.has(4)).toBe(false);
     expect(s.size).toBe(3);
 
-    const m = s.map(v => v + 1);
+    const m = s.map((v) => v + 1);
     expect(m.has(1)).toBe(false);
     expect(m.has(2)).toBe(true);
     expect(m.has(3)).toBe(true);
@@ -262,7 +262,7 @@ describe('Set', () => {
 
   it('can use union in a withMutation', () => {
     const js = Set()
-      .withMutations(set => {
+      .withMutations((set) => {
         set.union(['a']);
         set.add('b');
       })
@@ -278,11 +278,10 @@ describe('Set', () => {
 
   describe('accepts Symbol as entry #579', () => {
     it('operates on small number of symbols, preserving set uniqueness', () => {
-      // eslint-disable-next-line symbol-description
       const a = Symbol();
-      // eslint-disable-next-line symbol-description
+
       const b = Symbol();
-      // eslint-disable-next-line symbol-description
+
       const c = Symbol();
 
       const symbolSet = Set([a, b, c, a, b, c, a, b, c, a, b, c]);
@@ -315,7 +314,7 @@ describe('Set', () => {
   });
 
   it('can use intersect after add or union in a withMutation', () => {
-    const set = Set(['a', 'd']).withMutations(s => {
+    const set = Set(['a', 'd']).withMutations((s) => {
       s.add('b');
       s.union(['c']);
       s.intersect(['b', 'c', 'd']);
@@ -327,7 +326,7 @@ describe('Set', () => {
     const set = Set([1, 2, 3, 4, 5]);
     expect(set.size).toEqual(5);
     expect(set.count()).toEqual(5);
-    expect(set.count(x => x % 2 === 0)).toEqual(2);
+    expect(set.count((x) => x % 2 === 0)).toEqual(2);
     expect(set.count(() => true)).toEqual(5);
   });
 
@@ -355,7 +354,7 @@ describe('Set', () => {
         }
       }
       it('with mutations', () => {
-        const testSet = Set().withMutations(mutableSet => {
+        const testSet = Set().withMutations((mutableSet) => {
           mutableSet.add(new Entity('hello', 'world'));
           mutableSet.add(new Entity('testing', 'immutable'));
           mutableSet.add(new Entity('hello', 'world'));

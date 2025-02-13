@@ -71,6 +71,7 @@ export class Record {
           indices[propName] = i;
           if (RecordTypePrototype[propName]) {
             /* eslint-disable no-console */
+            // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
             typeof console === 'object' &&
               console.warn &&
               console.warn(
@@ -87,7 +88,7 @@ export class Record {
         }
       }
       this.__ownerID = undefined;
-      this._values = List().withMutations(l => {
+      this._values = List().withMutations((l) => {
         l.setSize(this._keys.length);
         KeyedCollection(values).forEach((v, k) => {
           l.set(this._indices[k], v === this._defaultValues[k] ? undefined : v);
@@ -247,7 +248,7 @@ function recordName(record) {
 }
 
 function recordSeq(record) {
-  return keyedSeqFromValue(record._keys.map(k => [k, record.get(k)]));
+  return keyedSeqFromValue(record._keys.map((k) => [k, record.get(k)]));
 }
 
 function setProp(prototype, name) {
@@ -261,6 +262,7 @@ function setProp(prototype, name) {
         this.set(name, value);
       },
     });
+    // eslint-disable-next-line @typescript-eslint/no-unused-vars -- TODO enable eslint here
   } catch (error) {
     // Object.defineProperty failed. Probably IE8.
   }

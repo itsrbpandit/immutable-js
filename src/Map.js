@@ -40,12 +40,12 @@ export class Map extends KeyedCollection {
     return value === undefined || value === null
       ? emptyMap()
       : isMap(value) && !isOrdered(value)
-      ? value
-      : emptyMap().withMutations(map => {
-          const iter = KeyedCollection(value);
-          assertNotInfinite(iter.size);
-          iter.forEach((v, k) => map.set(k, v));
-        });
+        ? value
+        : emptyMap().withMutations((map) => {
+            const iter = KeyedCollection(value);
+            assertNotInfinite(iter.size);
+            iter.forEach((v, k) => map.set(k, v));
+          });
   }
 
   toString() {
@@ -77,8 +77,8 @@ export class Map extends KeyedCollection {
       return this;
     }
 
-    return this.withMutations(map => {
-      collection.forEach(key => map.remove(key));
+    return this.withMutations((map) => {
+      collection.forEach((key) => map.remove(key));
     });
   }
 
@@ -109,7 +109,7 @@ export class Map extends KeyedCollection {
   }
 
   map(mapper, context) {
-    return this.withMutations(map => {
+    return this.withMutations((map) => {
       map.forEach((value, key) => {
         map.set(key, mapper.call(context, value, key, this));
       });
@@ -124,8 +124,9 @@ export class Map extends KeyedCollection {
 
   __iterate(fn, reverse) {
     let iterations = 0;
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
     this._root &&
-      this._root.iterate(entry => {
+      this._root.iterate((entry) => {
         iterations++;
         return fn(entry[1], entry[0], this);
       }, reverse);
@@ -211,6 +212,7 @@ class ArrayMapNode {
     }
 
     SetRef(didAlter);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
     (removed || !exists) && SetRef(didChangeSize);
 
     if (removed && entries.length === 1) {
@@ -226,6 +228,7 @@ class ArrayMapNode {
 
     if (exists) {
       if (removed) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
         idx === len - 1
           ? newEntries.pop()
           : (newEntries[idx] = newEntries.pop());
@@ -450,6 +453,7 @@ class HashCollisionNode {
     }
 
     SetRef(didAlter);
+    // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
     (removed || !exists) && SetRef(didChangeSize);
 
     if (removed && len === 2) {
@@ -461,6 +465,7 @@ class HashCollisionNode {
 
     if (exists) {
       if (removed) {
+        // eslint-disable-next-line @typescript-eslint/no-unused-expressions -- TODO enable eslint here
         idx === len - 1
           ? newEntries.pop()
           : (newEntries[idx] = newEntries.pop());

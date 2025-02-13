@@ -1,4 +1,3 @@
-// eslint-disable-next-line import/no-unresolved -- immutable is resolve by jest resolver
 import { Record } from 'immutable';
 
 describe('Record', () => {
@@ -21,7 +20,7 @@ describe('Record', () => {
       t.a = 10;
     }).toThrow();
 
-    const t2 = t.withMutations(mt => {
+    const t2 = t.withMutations((mt) => {
       mt.a = 10;
       mt.b = 20;
       mt.c = 30;

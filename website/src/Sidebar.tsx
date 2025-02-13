@@ -27,7 +27,7 @@ function Links({
   return (
     <div>
       <h2>Immutable.js</h2>
-      {links.map(link => {
+      {links.map((link) => {
         const isCurrent = focus?.label === link.label;
         const isActive = isCurrent && !isForcedClosed;
         return (
@@ -39,15 +39,13 @@ function Links({
             >
               <Link
                 href={link.url}
-                onClick={e => {
+                onClick={(e) => {
                   if (isCurrent) {
                     e.preventDefault();
                     setIsForcedClosed(!isForcedClosed);
                   }
                 }}
               >
-                {/* eslint-disable-next-line jsx-a11y/click-events-have-key-events, jsx-a11y/anchor-is-valid */}
-
                 {link.label}
                 {isActive && (focus?.interface || focus?.functions) && (
                   <>
@@ -99,7 +97,7 @@ function Focus({
       {focus.functions && (
         <section>
           <h4 className="groupTitle">Static Methods</h4>
-          {Object.values(focus.functions).map(fn => (
+          {Object.values(focus.functions).map((fn) => (
             <div key={fn.id}>
               <Link href={fn.url}>{fn.label}</Link>
             </div>
@@ -119,7 +117,7 @@ function Focus({
                 <h4 key={title || 'Members'} className="groupTitle">
                   {title || 'Members'}
                 </h4>,
-                groupMembers.map(member => (
+                groupMembers.map((member) => (
                   <div key={member.id}>
                     <Link href={member.url}>{member.label}</Link>
                   </div>
