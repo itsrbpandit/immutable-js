@@ -4453,6 +4453,9 @@ function reduce(collection, reducer, reduction, context, useFirst, reverse) {
             reduction = v;
         }
         else {
+            // `reduction` has already been seeded here (either with the provided
+            // initial value or with the first iterated value), so it is never the
+            // `undefined` placeholder — only a `V` or a `R`.
             reduction = reducer.call(context, reduction, v, k, c);
         }
     }, reverse);
@@ -5637,11 +5640,12 @@ mixin(IndexedCollection, {
 
   has: function has(index) {
     index = wrapIndex(this, index);
+
     return (
       index >= 0 &&
       (this.size !== undefined
         ? this.size === Infinity || index < this.size
-        : this.indexOf(index) !== -1)
+        : this.find(function (_, key) { return key === index; }, undefined, NOT_SET) !== NOT_SET)
     );
   },
 
