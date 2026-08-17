@@ -81,9 +81,9 @@ const WHY: Array<{ label: string; title: string; desc: string }> = [
     desc: 'Read and update values buried deep in nested structures with a path.',
   },
   {
-    label: 'TypeScript & Flow',
+    label: 'TypeScript',
     title: 'Typed out of the box',
-    desc: 'Full generics, error detection and editor auto-complete — nothing to install.',
+    desc: 'First class TypeScript support: full generics, error detection and editor auto-complete — nothing to install.',
   },
 ];
 

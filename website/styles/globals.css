@@ -34,9 +34,10 @@
   --c-punct: #9a948d;
   --c-var: #2c3a46;
 
-  --shadow: 0 1px 2px rgba(20, 30, 40, 0.05), 0 14px 38px rgba(20, 30, 40, 0.08);
-  --shadow-sm: 0 1px 2px rgba(20, 30, 40, 0.07),
-    0 4px 12px rgba(20, 30, 40, 0.05);
+  --shadow:
+    0 1px 2px rgba(20, 30, 40, 0.05), 0 14px 38px rgba(20, 30, 40, 0.08);
+  --shadow-sm:
+    0 1px 2px rgba(20, 30, 40, 0.07), 0 4px 12px rgba(20, 30, 40, 0.05);
 
   --header-h: 57px;
 
@@ -220,7 +221,9 @@ code {
   font-weight: 500;
   font-size: 14px;
   white-space: nowrap;
-  transition: background-color 0.15s, color 0.15s;
+  transition:
+    background-color 0.15s,
+    color 0.15s;
 }
 
 .rd-navlink:hover {
@@ -682,6 +685,29 @@ code {
   display: inline-block;
 }
 
+.doc-article ul,
+.doc-article ol {
+  margin: 0 0 16px;
+  padding-left: 22px;
+  font-size: 16px;
+  line-height: 1.6;
+  color: var(--fg);
+}
+.doc-article li {
+  margin-bottom: 6px;
+}
+.doc-article li::marker {
+  color: var(--muted);
+}
+
+.doc-article blockquote {
+  margin: 0 0 20px;
+  padding: 2px 0 2px 18px;
+  border-left: 3px solid var(--accent);
+  color: var(--muted);
+  font-style: italic;
+}
+
 .doc-breadcrumb {
   display: flex;
   align-items: center;
@@ -1139,8 +1165,14 @@ blockquote {
 }
 
 /* Sidebar eyebrow + expand chevron */
+.sb-eyebrow--collections,
 .sb-eyebrow--functions {
   margin-top: 22px;
+}
+/* Guide entries are prose titles, not code identifiers. */
+.sb-member--prose {
+  font-family: inherit;
+  font-size: 13.5px;
 }
 .sb-chevron {
   margin-left: auto;
@@ -1160,4 +1192,139 @@ blockquote {
 .sb-member--active {
   background: var(--accent-soft);
   color: var(--accent-ink);
+}
+
+/* Guide (Get started) pages
+   ========================================================================== */
+
+/* Prose page titles are not code identifiers, so they don't get the mono face
+   used by the reference cards. */
+.doc-card__name--prose {
+  font-family: inherit;
+  font-weight: 600;
+}
+
+/* Previous/next pager at the bottom of each guide page */
+.doc-pager {
+  display: flex;
+  justify-content: space-between;
+  gap: 14px;
+  margin-top: 44px;
+  padding-top: 22px;
+  border-top: 1px solid var(--border);
+}
+.doc-pager__link {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  max-width: 48%;
+  padding: 12px 16px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface);
+  transition: border-color 0.15s;
+}
+.doc-pager__link:hover {
+  border-color: var(--accent);
+}
+.doc-pager__link--next {
+  margin-left: auto;
+  text-align: right;
+}
+.doc-pager__dir {
+  font-family: 'Fira Code', monospace;
+  font-size: 11px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+.doc-pager__label {
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--fg-strong);
+}
+
+/* Package-manager tabs on the installation page */
+.pm-tabs {
+  margin: 0 0 20px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: var(--code-bg);
+  overflow: hidden;
+}
+.pm-tabs__bar {
+  display: flex;
+  gap: 2px;
+  padding: 6px 8px;
+  border-bottom: 1px solid var(--border);
+  background: var(--surface-2);
+}
+.pm-tabs__tab {
+  border: none;
+  cursor: pointer;
+  font-family: 'Fira Code', monospace;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 4px 13px;
+  border-radius: 6px;
+  background: transparent;
+  color: var(--muted);
+}
+.pm-tabs__tab:hover {
+  color: var(--fg);
+}
+.pm-tabs__tab--active {
+  background: var(--surface);
+  color: var(--fg-strong);
+  box-shadow: var(--shadow-sm);
+}
+/* The pre already sits inside the tab shell, so it drops its own chrome. */
+.doc-article .pm-tabs__code {
+  margin: 0;
+  border: none;
+  border-radius: 0;
+  background: transparent;
+  padding: 14px 18px;
+}
+.doc-article .pm-tabs__code code {
+  display: block;
+  background: transparent;
+  padding: 0;
+  border-radius: 0;
+  font-size: 13px;
+  line-height: 1.7;
+  color: var(--fg-strong);
+}
+.pm-tabs__prompt {
+  color: var(--muted);
+  user-select: none;
+}
+
+/* Tables inside guide pages (written as raw HTML in MDX) */
+.doc-table {
+  overflow-x: auto;
+  margin: 0 0 20px;
+}
+.doc-table table {
+  border-collapse: collapse;
+  width: 100%;
+  font-size: 14px;
+}
+.doc-table th,
+.doc-table td {
+  padding: 9px 14px;
+  text-align: left;
+  border-bottom: 1px solid var(--border);
+  white-space: nowrap;
+}
+.doc-table th {
+  font-weight: 600;
+  color: var(--fg-strong);
+  border-bottom-color: var(--accent);
+}
+.doc-table td {
+  color: var(--fg);
+}
+.doc-table tbody tr:hover {
+  background: var(--surface-2);
 }

@@ -6,6 +6,7 @@ import { Fragment, useEffect, useState, type JSX } from 'react';
 import { Logo } from '../Logo';
 import { SVGSet } from '../SVGSet';
 import {
+  GET_STARTED_LINKS,
   SIDEBAR_LINKS,
   SidebarLinkType,
   VERSION,
@@ -55,6 +56,7 @@ export default function SideBar({
   const router = useRouter();
   const [query, setQuery] = useState('');
   const [collapsed, setCollapsed] = useState(false);
+  const [getStartedCollapsed, setGetStartedCollapsed] = useState(false);
   const [navOpen, setNavOpen] = useState(false);
   const [hash, setHash] = useState('');
 
@@ -71,6 +73,21 @@ export default function SideBar({
 
   const q = query.trim().toLowerCase();
   const match = (label: string) => !q || label.toLowerCase().includes(q);
+
+  const getStarted = GET_STARTED_LINKS.filter((l) => match(l.label));
+
+  // The guide behaves like a collection: collapsed by default, but left open
+  // while the reader is somewhere inside it.
+  const getStartedUrl = `/docs/${currentVersion}/get-started/`;
+  const inGetStarted = pathname.startsWith(getStartedUrl.replace(/\/$/, ''));
+  const showGetStarted = !q || getStarted.length > 0;
+  const getStartedExpanded = q ? true : inGetStarted && !getStartedCollapsed;
+
+  // Label of the page currently open, shown on the mobile toggle.
+  const currentLabel =
+    activeType ??
+    GET_STARTED_LINKS.find((l) => pathname.startsWith(l.url.replace(/\/$/, '')))
+      ?.label;
 
   const collections = SIDEBAR_LINKS.filter(
     (l) => l.type === SidebarLinkType.Collection && match(l.label)
@@ -150,7 +167,7 @@ export default function SideBar({
           <line x1="4" y1="12" x2="20" y2="12" />
           <line x1="4" y1="17" x2="20" y2="17" />
         </svg>
-        <span>{activeType ? `Reference · ${activeType}` : 'Reference'}</span>
+        <span>{currentLabel ? `Docs · ${currentLabel}` : 'Docs'}</span>
         <Chevron open={navOpen} />
       </button>
 
@@ -208,9 +225,57 @@ export default function SideBar({
           />
         </div>
 
+        {showGetStarted && (
+          <div>
+            <Link
+              href={getStartedUrl}
+              className={`sb-item ${inGetStarted ? 'sb-item--active' : ''}`}
+              onClick={(e) => {
+                if (
+                  pathname === getStartedUrl ||
+                  pathname === getStartedUrl.replace(/\/$/, '')
+                ) {
+                  e.preventDefault();
+                  setGetStartedCollapsed((prev) => !prev);
+                } else {
+                  setNavOpen(false);
+                }
+              }}
+            >
+              Get started
+              <Chevron open={getStartedExpanded} />
+            </Link>
+
+            {getStartedExpanded && (
+              <div className="sb-members">
+                {getStarted.map((link) => {
+                  const isCurrent =
+                    pathname === link.url ||
+                    pathname === link.url.replace(/\/$/, '');
+
+                  return (
+                    <Link
+                      key={link.url}
+                      href={link.url}
+                      className={`sb-member sb-member--prose ${
+                        isCurrent ? 'sb-member--active' : ''
+                      }`}
+                      onClick={() => setNavOpen(false)}
+                    >
+                      {link.label}
+                    </Link>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
+
         {collections.length > 0 && (
           <>
-            <div className="sb-eyebrow">Collections</div>
+            <div className="sb-eyebrow sb-eyebrow--collections">
+              Collections
+            </div>
             {collections.map(renderCollection)}
           </>
         )}

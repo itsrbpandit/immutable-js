@@ -5,6 +5,92 @@ export enum SidebarLinkType {
   Function = 'function',
 }
 
+export type GetStartedLink = {
+  label: string;
+  description: string;
+  /** Basename of the MDX file in `website/docs/get-started/`. */
+  slug: string;
+  url: string;
+};
+
+/**
+ * The guide pages, in reading order. They live in `website/docs/get-started/`
+ * and are hand-written, unlike the API reference pages which are generated
+ * from the type definitions.
+ */
+export const GET_STARTED_LINKS: Array<GetStartedLink> = [
+  {
+    label: 'Installation',
+    description:
+      'Add Immutable.js to your project with your package manager or a script tag, with first class TypeScript support built in.',
+    slug: 'installation',
+    url: `/docs/${VERSION}/get-started/installation/`,
+  },
+  {
+    label: 'Why Immutable.js?',
+    description:
+      'What persistent data structures are, why they make application state simpler, and what Immutable.js brings to the table.',
+    slug: 'why-immutable',
+    url: `/docs/${VERSION}/get-started/why-immutable/`,
+  },
+  {
+    label: 'JavaScript-first API',
+    description:
+      'The collections mirror Array, Map and Set, and convert to and from plain JavaScript objects and arrays.',
+    slug: 'javascript-first-api',
+    url: `/docs/${VERSION}/get-started/javascript-first-api/`,
+  },
+  {
+    label: 'Nested structures',
+    description:
+      'Read and update deeply nested data with getIn, setIn, updateIn and mergeDeep.',
+    slug: 'nested-structures',
+    url: `/docs/${VERSION}/get-started/nested-structures/`,
+  },
+  {
+    label: 'Equality as values',
+    description:
+      'Two collections holding the same values are equal. How that differs from reference equality, and what it costs.',
+    slug: 'equality',
+    url: `/docs/${VERSION}/get-started/equality/`,
+  },
+  {
+    label: 'Batching mutations',
+    description:
+      'Apply a batch of changes to a temporary mutable copy with withMutations, and pay for a single new collection.',
+    slug: 'batching-mutations',
+    url: `/docs/${VERSION}/get-started/batching-mutations/`,
+  },
+  {
+    label: 'Lazy Seq',
+    description:
+      'Chain map, filter and friends without ever building the intermediate collections — even over infinite sequences.',
+    slug: 'lazy-seq',
+    url: `/docs/${VERSION}/get-started/lazy-seq/`,
+  },
+  {
+    label: 'filter, partition & groupBy',
+    description:
+      'Three ways to split a collection into parts, and how to pick the right one.',
+    slug: 'filter-partition-groupby',
+    url: `/docs/${VERSION}/get-started/filter-partition-groupby/`,
+  },
+  {
+    label: 'How to read these docs',
+    description:
+      'The type notation used across the API reference, and a cheatsheet of how the collections inherit from each other.',
+    slug: 'how-to-read-these-docs',
+    url: `/docs/${VERSION}/get-started/how-to-read-these-docs/`,
+  },
+  {
+    label: 'Tools & resources',
+    description:
+      'Third-party libraries built around Immutable.js, and where to ask questions or contribute.',
+    slug: 'tools-and-resources',
+    url: `/docs/${VERSION}/get-started/tools-and-resources/`,
+  },
+];
+
 export type SidebarLink = {
   label: string;
   description: string;
